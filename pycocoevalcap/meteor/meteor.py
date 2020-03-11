@@ -7,6 +7,7 @@ import os
 import sys
 import subprocess
 import threading
+from tqdm import tqdm
 
 # Assumes meteor-1.5.jar is in the same directory as meteor.py.  Change as needed.
 METEOR_JAR = 'meteor-1.5.jar'
@@ -15,13 +16,16 @@ METEOR_JAR = 'meteor-1.5.jar'
 class Meteor:
 
     def __init__(self):
+        self.env = os.environ
+        self.env['LC_ALL'] = 'en_US.UTF_8'
         self.meteor_cmd = ['java', '-jar', '-Xmx2G', METEOR_JAR, \
                 '-', '-', '-stdio', '-l', 'en', '-norm']
         self.meteor_p = subprocess.Popen(self.meteor_cmd, \
                 cwd=os.path.dirname(os.path.abspath(__file__)), \
                 stdin=subprocess.PIPE, \
                 stdout=subprocess.PIPE, \
-                stderr=subprocess.PIPE)
+                stderr=subprocess.PIPE,
+                env=self.env, universal_newlines=True, bufsize=1)
         # Used to guarantee thread safety
         self.lock = threading.Lock()
 
@@ -32,7 +36,7 @@ class Meteor:
 
         eval_line = 'EVAL'
         self.lock.acquire()
-        for i in imgIds:
+        for i in tqdm(imgIds):
             assert(len(res[i]) == 1)
             stat = self._stat(res[i][0], gts[i])
             eval_line += ' ||| {}'.format(stat)
